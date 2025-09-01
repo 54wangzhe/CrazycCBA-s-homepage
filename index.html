@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简导航</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4e89ae;
+            --primary-dark: #43658b;
+            --bg-dark: #1a1a2e;
+            --panel-bg: rgba(30, 30, 46, 0.95);
+            --input-bg: rgba(20, 20, 36, 0.8);
+            --transparent-bg: rgba(255, 255, 255, 0.15);
+            --transparent-border: rgba(255, 255, 255, 0.2);
+            --text: #fff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --text-tertiary: rgba(255, 255, 255, 0.6);
+            --backdrop-blur: 10px;
+            --shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            --transition: all 0.3s ease;
+            --radius: 10px;
+            --success: #28a745;
+            --danger: #dc3545;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(5px) brightness(0.7);
+            z-index: -1;
+            transition: var(--transition);
+            will-change: filter, background-image;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 20, 0.4);
+            z-index: -1;
+        }
+        
+        header {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .icon-btn {
+            background: var(--transparent-bg);
+            border: 1px solid var(--transparent-border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(var(--backdrop-blur));
+        }
+        
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+        
+        .settings-btn:hover {
+            transform: rotate(90deg) scale(1.05);
+        }
+        
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .time {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 300;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .date {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: 300;
+            margin-bottom: 25px;
+            color: var(--text-secondary);
+        }
+        
+        .sites-container {
+            width: 100%;
+            margin: 0 auto 30px;
+            padding: 0 15px;
+        }
+        
+        .sites-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 8px;
+        }
+        
+        .sites-title {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .sites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            justify-items: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .site-card {
+            background: var(--transparent-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            border: 1px solid var(--transparent-border);
+            border-radius: var(--radius);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            width: 100px;
+        }
+        
+        .site-card:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        
+        .site-icon-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        
+        .site-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .site-favicon {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: white;
+        }
+        
+        .site-name {
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+        }
+        
+        .site-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .site-card:hover .site-actions {
+            opacity: 1;
+        }
+        
+        .site-action-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            margin-bottom: 3px;
+            cursor: pointer;
+        }
+        
+        .site-edit:hover {
+            background: rgba(78, 137, 174, 0.7);
+        }
+        
+        .site-delete:hover {
+            background: rgba(220, 53, 69, 0.7);
+        }
+        
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            background: var(--transparent-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            color: white;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--transparent-border);
+            transition: var(--transition);
+        }
+        
+        .search-box:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .search-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-50%) scale(1.05);
+        }
+        
+        .engine-selector {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .engine-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(var(--backdrop-blur));
+        }
+        
+        .engine-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .engine-btn.active {
+            background: var(--primary);
+            border-color: rgba(78, 137, 174, 0.5);
+        }
+        
+        .panel {
+            position: fixed;
+            top: 70px;
+            right: 30px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--backdrop-blur));
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateY(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            z-index: 100;
+        }
+        
+        .panel.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .panel h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            margin-top: 8px;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--transparent-border);
+            margin-top: 8px;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .actions-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .icon-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--panel-bg);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* 加载动画 */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 网站卡片加载状态 */
+        .site-card.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .site-card.loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 错误状态 */
+        .site-card.error .site-icon-container {
+            background-color: rgba(220, 53, 69, 0.2);
+        }
+        
+        /* 表单验证 */
+        .form-control.error {
+            border-color: var(--danger);
+        }
+        
+        .error-text {
+            color: var(--danger);
+            font-size: 0.75rem;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .form-control.error + .error-text {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .panel {
+                width: 90%;
+                max-width: 320px;
+                right: 5%;
+                left: 5%;
+                margin: 0 auto;
+            }
+            
+            .sites-grid {
+                grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+            }
+            
+            .site-card {
+                width: 85px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景层 -->
+    <div class="background" id="background"></div>
+    <div class="overlay"></div>
+    
+    <!-- 页眉 -->
+    <header>
+        <div class="header-actions">
+            <div class="icon-btn add-site-btn" id="addSiteBtn" title="添加网站">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="icon-btn settings-btn" id="settingsBtn" title="设置">
+                <i class="fas fa-cog"></i>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 主内容区 -->
+    <main>
+        <div class="time" id="time">00:00:00</div>
+        <div class="date" id="date">2023年1月1日 星期一</div>
+        
+        <!-- 快捷网站区域 -->
+        <div class="sites-container">
+            <div class="sites-header">
+                <div class="sites-title">快捷访问</div>
+            </div>
+            <div class="sites-grid" id="sitesGrid">
+                <!-- 快捷网站卡片将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-box" id="searchInput" placeholder="输入搜索内容..." autocomplete="off">
+            <button class="search-btn" id="searchBtn" title="搜索">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        
+        <div class="engine-selector" id="engineSelector">
+            <div class="engine-btn active" data-engine="google">Google</div>
+            <div class="engine-btn" data-engine="bing">Bing</div>
+            <div class="engine-btn" data-engine="baidu">百度</div>
+            <div class="engine-btn" data-engine="duckduckgo">DuckDuckGo</div>
+        </div>
+    </main>
+    
+    <!-- 设置面板 -->
+    <div class="panel settings-panel" id="settingsPanel">
+        <h3><i class="fas fa-sliders-h"></i> 自定义设置</h3>
+        
+        <div class="form-group">
+            <label for="bgUrl">背景图片URL</label>
+            <input type="text" class="form-control" id="bgUrl" placeholder="输入图片URL地址">
+            <div class="error-text" id="bgUrlError">请输入有效的图片URL</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="bgBlur">背景模糊度 (px)</label>
+            <input type="range" class="form-control" id="bgBlur" min="0" max="20" value="5">
+            <span id="blurValue">5px</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="bgBrightness">背景亮度 (%)</label>
+            <input type="range" class="form-control" id="bgBrightness" min="20" max="100" value="70">
+            <span id="brightnessValue">70%</span>
+        </div>
+        
+        <button class="btn" id="saveSettings">保存设置</button>
+    </div>
+    
+    <!-- 网站编辑面板 -->
+    <div class="panel site-panel" id="sitePanel">
+        <h3><i class="fas fa-link"></i> <span id="sitePanelTitle">添加网站</span></h3>
+        
+        <input type="hidden" id="editSiteId">
+        
+        <div class="form-group">
+            <label for="siteName">网站名称</label>
+            <input type="text" class="form-control" id="siteName" placeholder="例如：GitHub">
+            <div class="error-text" id="siteNameError">请输入网站名称</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="siteUrl">网站地址</label>
+            <input type="text" class="form-control" id="siteUrl" placeholder="例如：https://github.com">
+            <div class="error-text" id="siteUrlError">请输入有效的URL地址</div>
+            <small style="color: var(--text-tertiary); font-size: 0.7rem; margin-top: 3px; display: block;">
+                输入后将自动尝试获取网站图标
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label>图标类型</label>
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" name="iconType" id="iconTypeFont" value="font">
+                    <label for="iconTypeFont">字体图标</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" name="iconType" id="iconTypeFavicon" value="favicon" checked>
+                    <label for="iconTypeFavicon">网站图标</label>
+                </div>
+            </div>
+        </div>
+        
+        <div id="fontIconGroup" class="icon-group" style="display: none;">
+            <div class="form-group">
+                <label for="siteIcon">Font Awesome图标类名</label>
+                <input type="text" class="form-control" id="siteIcon" placeholder="例如：fab fa-github">
+                <small style="color: var(--text-tertiary); font-size: 0.7rem; margin-top: 3px; display: block;">
+                    可在 <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--primary);">Font Awesome</a> 查找图标类名
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="siteColor">图标颜色</label>
+                <input type="color" class="form-control" id="siteColor" value="#4e89ae">
+            </div>
+        </div>
+        
+        <div id="faviconGroup" class="icon-group">
+            <div class="form-group">
+                <label>网站图标预览</label>
+                <div class="site-icon-container" id="faviconPreview">
+                    <img src="" alt="网站图标" class="site-favicon" id="faviconImg">
+                </div>
+                <input type="hidden" id="siteFavicon" value="">
+                <button class="btn btn-secondary" style="margin-top: 8px; padding: 5px;" id="refetchFaviconBtn">
+                    重新获取图标
+                </button>
+            </div>
+        </div>
+        
+        <div class="icon-preview" id="iconPreview" style="background-color: #4e89ae;">
+            <i class="fas fa-globe"></i>
+        </div>
+        
+        <div class="actions-row">
+            <button class="btn" id="saveSite">保存</button>
+            <button class="btn btn-secondary" id="cancelSite">取消</button>
+        </div>
+    </div>
+    
+    <!-- 通知提示 -->
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // 使用立即执行函数封装代码，避免全局污染
+        (function() {
+            // 初始化应用
+            document.addEventListener('DOMContentLoaded', () => {
+                // DOM元素缓存
+                const elements = {
+                    time: document.getElementById('time'),
+                    date: document.getElementById('date'),
+                    searchInput: document.getElementById('searchInput'),
+                    searchBtn: document.getElementById('searchBtn'),
+                    settingsBtn: document.getElementById('settingsBtn'),
+                    addSiteBtn: document.getElementById('addSiteBtn'),
+                    settingsPanel: document.getElementById('settingsPanel'),
+                    sitePanel: document.getElementById('sitePanel'),
+                    sitePanelTitle: document.getElementById('sitePanelTitle'),
+                    bgUrlInput: document.getElementById('bgUrl'),
+                    bgBlurInput: document.getElementById('bgBlur'),
+                    bgBrightnessInput: document.getElementById('bgBrightness'),
+                    blurValue: document.getElementById('blurValue'),
+                    brightnessValue: document.getElementById('brightnessValue'),
+                    saveSettingsBtn: document.getElementById('saveSettings'),
+                    background: document.getElementById('background'),
+                    engineSelector: document.getElementById('engineSelector'),
+                    sitesGrid: document.getElementById('sitesGrid'),
+                    // 网站编辑面板元素
+                    editSiteId: document.getElementById('editSiteId'),
+                    siteName: document.getElementById('siteName'),
+                    siteUrl: document.getElementById('siteUrl'),
+                    siteIcon: document.getElementById('siteIcon'),
+                    siteColor: document.getElementById('siteColor'),
+                    siteFavicon: document.getElementById('siteFavicon'),
+                    saveSiteBtn: document.getElementById('saveSite'),
+                    cancelSiteBtn: document.getElementById('cancelSite'),
+                    refetchFaviconBtn: document.getElementById('refetchFaviconBtn'),
+                    iconTypeFont: document.getElementById('iconTypeFont'),
+                    iconTypeFavicon: document.getElementById('iconTypeFavicon'),
+                    fontIconGroup: document.getElementById('fontIconGroup'),
+                    faviconGroup: document.getElementById('faviconGroup'),
+                    faviconPreview: document.getElementById('faviconPreview'),
+                    faviconImg: document.getElementById('faviconImg'),
+                    iconPreview: document.getElementById('iconPreview'),
+                    notification: document.getElementById('notification'),
+                    // 错误提示元素
+                    siteNameError: document.getElementById('siteNameError'),
+                    siteUrlError: document.getElementById('siteUrlError'),
+                    bgUrlError: document.getElementById('bgUrlError')
+                };
+
+                // 配置常量
+                const DEFAULT_SETTINGS = {
+                    bgUrl: 'https://wolfchen.top/ltmn',
+                    bgBlur: 5,
+                    bgBrightness: 70,
+                    searchEngine: 'google'
+                };
+
+                const SEARCH_ENGINES = {
+                    google: 'https://www.google.com/search?q=',
+                    bing: 'https://www.bing.com/search?q=',
+                    baidu: 'https://www.baidu.com/s?wd=',
+                    duckduckgo: 'https://duckduckgo.com/?q='
+                };
+
+                // 默认网站
+                const DEFAULT_SITES = [
+                    {
+                        id: '1',
+                        name: 'GitHub',
+                        url: 'https://github.com',
+                        iconType: 'favicon',
+                        icon: '',
+                        color: '',
+                        favicon: 'https://github.com/favicon.ico'
+                    },
+                    {
+                        id: '2',
+                        name: 'YouTube',
+                        url: 'https://youtube.com',
+                        iconType: 'favicon',
+                        icon: '',
+                        color: '',
+                        favicon: 'https://youtube.com/favicon.ico'
+                    },
+                    {
+                        id: '3',
+                        name: '百度',
+                        url: 'https://baidu.com',
+                        iconType: 'favicon',
+                        icon: '',
+                        color: '',
+                        favicon: 'https://baidu.com/favicon.ico'
+                    },
+                    {
+                        id: '4',
+                        name: '掘金',
+                        url: 'https://juejin.cn',
+                        iconType: 'favicon',
+                        icon: '',
+                        color: '',
+                        favicon: 'https://juejin.cn/favicon.ico'
+                    }
+                ];
+
+                // 状态管理
+                let appState = {
+                    settings: { ...DEFAULT_SETTINGS },
+                    sites: []
+                };
+
+                // 工具函数
+                const utils = {
+                    // 生成唯一ID
+                    generateId() {
+                        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                    },
+                    
+                    // 从本地存储加载设置
+                    loadSettings() {
+                        try {
+                            const saved = localStorage.getItem('navSettings');
+                            return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+                        } catch (e) {
+                            console.error('加载设置失败:', e);
+                            return DEFAULT_SETTINGS;
+                        }
+                    },
+
+                    // 保存设置到本地存储
+                    saveSettings(settings) {
+                        try {
+                            localStorage.setItem('navSettings', JSON.stringify(settings));
+                            return true;
+                        } catch (e) {
+                            console.error('保存设置失败:', e);
+                            return false;
+                        }
+                    },
+                    
+                    // 从本地存储加载网站
+                    loadSites() {
+                        try {
+                            const saved = localStorage.getItem('navSites');
+                            return saved ? JSON.parse(saved) : DEFAULT_SITES;
+                        } catch (e) {
+                            console.error('加载网站失败:', e);
+                            return DEFAULT_SITES;
+                        }
+                    },
+                    
+                    // 保存网站到本地存储
+                    saveSites(sites) {
+                        try {
+                            localStorage.setItem('navSites', JSON.stringify(sites));
+                            return true;
+                        } catch (e) {
+                            console.error('保存网站失败:', e);
+                            return false;
+                        }
+                    },
+
+                    // 格式化日期时间
+                    formatDateTime() {
+                        const now = new Date();
+                        
+                        // 时间格式化
+                        const time = [
+                            String(now.getHours()).padStart(2, '0'),
+                            String(now.getMinutes()).padStart(2, '0'),
+                            String(now.getSeconds()).padStart(2, '0')
+                        ].join(':');
+                        
+                        // 日期格式化
+                        const dateOptions = { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            weekday: 'long'
+                        };
+                        const date = now.toLocaleDateString('zh-CN', dateOptions);
+                        
+                        return { time, date };
+                    },
+                    
+                    // 验证URL格式
+                    validateUrl(url) {
+                        if (!url) return false;
+                        // 简单验证URL格式，确保包含协议
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            return 'URL需要以http://或https://开头';
+                        }
+                        
+                        // 更严格的URL验证
+                        try {
+                            new URL(url);
+                            return true;
+                        } catch (e) {
+                            return '请输入有效的URL地址';
+                        }
+                    },
+                    
+                    // 验证图片URL
+                    validateImageUrl(url) {
+                        if (!url) return false;
+                        
+                        const urlValidation = utils.validateUrl(url);
+                        if (urlValidation !== true) return urlValidation;
+                        
+                        // 检查是否为图片URL（简单检查）
+                        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+                        const isImage = imageExtensions.some(ext => url.toLowerCase().includes(ext));
+                        
+                        if (!isImage) {
+                            return '请输入有效的图片URL';
+                        }
+                        
+                        return true;
+                    },
+                    
+                    // 从URL获取域名
+                    getDomainFromUrl(url) {
+                        try {
+                            const urlObj = new URL(url);
+                            return urlObj.origin;
+                        } catch (e) {
+                            return null;
+                        }
+                    },
+                    
+                    // 获取网站favicon
+                    getFaviconUrl(url) {
+                        const domain = utils.getDomainFromUrl(url);
+                        if (!domain) return null;
+                        // 尝试获取网站根目录下的favicon.ico
+                        return `${domain}/favicon.ico`;
+                    },
+                    
+                    // 检查图片是否存在
+                    checkImageExists(url) {
+                        return new Promise((resolve) => {
+                            const img = new Image();
+                            img.onload = () => resolve(true);
+                            img.onerror = () => resolve(false);
+                            // 添加时间戳避免缓存问题
+                            img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                        });
+                    },
+                    
+                    // 显示通知
+                    showNotification(message, duration = 3000) {
+                        const notification = elements.notification;
+                        notification.textContent = message;
+                        notification.classList.add('show');
+                        
+                        setTimeout(() => {
+                            notification.classList.remove('show');
+                        }, duration);
+                    },
+                    
+                    // 防抖函数
+                    debounce(func, wait) {
+                        let timeout;
+                        return function executedFunction(...args) {
+                            const later = () => {
+                                clearTimeout(timeout);
+                                func(...args);
+                            };
+                            clearTimeout(timeout);
+                            timeout = setTimeout(later, wait);
+                        };
+                    }
+                };
+
+                // 核心功能
+                const actions = {
+                    // 更新时间日期显示
+                    updateDateTime() {
+                        const { time, date } = utils.formatDateTime();
+                        elements.time.textContent = time;
+                        elements.date.textContent = date;
+                    },
+
+                    // 执行搜索
+                    performSearch() {
+                        const query = elements.searchInput.value.trim();
+                        if (!query) return;
+                        
+                        const searchUrl = SEARCH_ENGINES[appState.settings.searchEngine] + encodeURIComponent(query);
+                        window.open(searchUrl, '_self');
+                    },
+
+                    // 切换搜索引擎
+                    switchSearchEngine(engine) {
+                        appState.settings.searchEngine = engine;
+                        if (!utils.saveSettings(appState.settings)) {
+                            utils.showNotification('保存搜索引擎设置失败', 2000);
+                            return;
+                        }
+                        
+                        // 更新UI
+                        document.querySelectorAll('.engine-btn').forEach(btn => {
+                            btn.classList.toggle('active', btn.dataset.engine === engine);
+                        });
+                    },
+
+                    // 切换设置面板显示状态
+                    toggleSettingsPanel() {
+                        elements.settingsPanel.classList.toggle('active');
+                        // 关闭其他面板
+                        elements.sitePanel.classList.remove('active');
+                        
+                        if (elements.settingsPanel.classList.contains('active')) {
+                            // 填充表单
+                            elements.bgUrlInput.value = appState.settings.bgUrl;
+                            elements.bgBlurInput.value = appState.settings.bgBlur;
+                            elements.bgBrightnessInput.value = appState.settings.bgBrightness;
+                            elements.blurValue.textContent = `${appState.settings.bgBlur}px`;
+                            elements.brightnessValue.textContent = `${appState.settings.bgBrightness}%`;
+                        }
+                    },
+
+                    // 应用背景设置
+                    applyBackgroundSettings() {
+                        // 预加载背景图片
+                        const bgImage = new Image();
+                        bgImage.onload = () => {
+                            elements.background.style.backgroundImage = `url('${appState.settings.bgUrl}')`;
+                            elements.background.style.filter = `blur(${appState.settings.bgBlur}px) brightness(${appState.settings.bgBrightness}%)`;
+                        };
+                        bgImage.onerror = () => {
+                            // 如果背景图片加载失败，使用默认背景
+                            appState.settings.bgUrl = DEFAULT_SETTINGS.bgUrl;
+                            elements.background.style.backgroundImage = `url('${DEFAULT_SETTINGS.bgUrl}')`;
+                            utils.showNotification('背景图片加载失败，已使用默认背景', 3000);
+                        };
+                        bgImage.src = appState.settings.bgUrl;
+                    },
+
+                    // 保存设置
+                    saveSettings() {
+                        // 验证背景图片URL
+                        const bgUrlValidation = utils.validateImageUrl(elements.bgUrlInput.value);
+                        if (bgUrlValidation !== true) {
+                            elements.bgUrlInput.classList.add('error');
+                            elements.bgUrlError.textContent = bgUrlValidation;
+                            elements.bgUrlError.style.display = 'block';
+                            return;
+                        }
+                        
+                        // 清除错误状态
+                        elements.bgUrlInput.classList.remove('error');
+                        elements.bgUrlError.style.display = 'none';
+                        
+                        appState.settings.bgUrl = elements.bgUrlInput.value || DEFAULT_SETTINGS.bgUrl;
+                        appState.settings.bgBlur = parseInt(elements.bgBlurInput.value, 10);
+                        appState.settings.bgBrightness = parseInt(elements.bgBrightnessInput.value, 10);
+                        
+                        // 保存到本地存储
+                        if (!utils.saveSettings(appState.settings)) {
+                            utils.showNotification('保存设置失败', 2000);
+                            return;
+                        }
+                        
+                        // 应用设置
+                        actions.applyBackgroundSettings();
+                        
+                        // 关闭面板并显示通知
+                        elements.settingsPanel.classList.remove('active');
+                        utils.showNotification('设置已保存');
+                    },
+                    
+                    // 渲染网站卡片
+                    renderSites() {
+                        // 清空现有内容
+                        elements.sitesGrid.innerHTML = '';
+                        
+                        // 如果没有网站，显示提示
+                        if (appState.sites.length === 0) {
+                            const emptyState = document.createElement('div');
+                            emptyState.className = 'empty-state';
+                            emptyState.style.gridColumn = '1 / -1';
+                            emptyState.style.padding = '20px';
+                            emptyState.style.color = 'var(--text-tertiary)';
+                            emptyState.style.textAlign = 'center';
+                            emptyState.innerHTML = `
+                                <i class="fas fa-link" style="font-size: 1.5rem; margin-bottom: 8px; display: block;"></i>
+                                还没有添加快捷网站<br>点击右上角"+"添加
+                            `;
+                            elements.sitesGrid.appendChild(emptyState);
+                            return;
+                        }
+                        
+                        // 渲染每个网站卡片
+                        appState.sites.forEach(site => {
+                            const card = document.createElement('div');
+                            card.className = 'site-card';
+                            card.dataset.id = site.id;
+                            
+                            let iconContent = '';
+                            if (site.iconType === 'font') {
+                                iconContent = `
+                                    <div class="site-icon" style="background-color: ${site.color}">
+                                        <i class="${site.icon}"></i>
+                                    </div>
+                                `;
+                            } else {
+                                iconContent = `
+                                    <div class="site-icon-container">
+                                        <img src="${site.favicon}" alt="${site.name}图标" class="site-favicon" onerror="this.parentElement.parentElement.parentElement.classList.add('error')">
+                                    </div>
+                                `;
+                            }
+                            
+                            card.innerHTML = `
+                                ${iconContent}
+                                <div class="site-name">${site.name}</div>
+                                <div class="site-actions">
+                                    <div class="site-action-btn site-edit" data-id="${site.id}" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </div>
+                                    <div class="site-action-btn site-delete" data-id="${site.id}" title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // 点击卡片跳转
+                            card.addEventListener('click', (e) => {
+                                // 如果点击的是编辑或删除按钮，则不跳转
+                                if (e.target.closest('.site-actions')) return;
+                                
+                                // 添加加载状态
+                                card.classList.add('loading');
+                                
+                                setTimeout(() => {
+                                    window.open(site.url, '_self');
+                                }, 300);
+                            });
+                            
+                            elements.sitesGrid.appendChild(card);
+                        });
+                    },
+                    
+                    // 更新图标预览
+                    updateIconPreview() {
+                        const iconType = elements.iconTypeFont.checked ? 'font' : 'favicon';
+                        
+                        if (iconType === 'font') {
+                            const icon = elements.siteIcon.value.trim() || 'fas fa-globe';
+                            const color = elements.siteColor.value;
+                            elements.iconPreview.style.backgroundColor = color;
+                            elements.iconPreview.innerHTML = `<i class="${icon}"></i>`;
+                        } else {
+                            const favicon = elements.siteFavicon.value;
+                            if (favicon) {
+                                elements.iconPreview.style.backgroundColor = 'transparent';
+                                elements.iconPreview.innerHTML = `<img src="${favicon}" alt="预览" class="site-favicon">`;
+                            } else {
+                                elements.iconPreview.style.backgroundColor = '#4e89ae';
+                                elements.iconPreview.innerHTML = '<i class="fas fa-globe"></i>';
+                            }
+                        }
+                    },
+                    
+                    // 切换图标类型显示
+                    toggleIconType() {
+                        const isFontIcon = elements.iconTypeFont.checked;
+                        elements.fontIconGroup.style.display = isFontIcon ? 'block' : 'none';
+                        elements.faviconGroup.style.display = isFontIcon ? 'none' : 'block';
+                        actions.updateIconPreview();
+                    },
+                    
+                    // 获取网站图标
+                    async fetchFavicon(showNotification = true) {
+                        const url = elements.siteUrl.value.trim();
+                        if (!url) {
+                            if (showNotification) {
+                                elements.siteUrl.classList.add('error');
+                                elements.siteUrlError.textContent = '请先输入网站地址';
+                                elements.siteUrlError.style.display = 'block';
+                            }
+                            return false;
+                        }
+                        
+                        const urlValidation = utils.validateUrl(url);
+                        if (urlValidation !== true) {
+                            if (showNotification) {
+                                elements.siteUrl.classList.add('error');
+                                elements.siteUrlError.textContent = urlValidation;
+                                elements.siteUrlError.style.display = 'block';
+                            }
+                            return false;
+                        }
+                        
+                        // 清除错误状态
+                        elements.siteUrl.classList.remove('error');
+                        elements.siteUrlError.style.display = 'none';
+                        
+                        // 显示加载状态
+                        elements.refetchFaviconBtn.innerHTML = '<div class="loader"></div>';
+                        
+                        // 尝试获取favicon
+                        const faviconUrl = utils.getFaviconUrl(url);
+                        if (!faviconUrl) {
+                            if (showNotification) {
+                                elements.refetchFaviconBtn.innerHTML = '重新获取图标';
+                                alert('无法解析网站地址');
+                            }
+                            return false;
+                        }
+                        
+                        // 检查图标是否存在
+                        const exists = await utils.checkImageExists(faviconUrl);
+                        elements.refetchFaviconBtn.innerHTML = '重新获取图标';
+                        
+                        if (exists) {
+                            elements.siteFavicon.value = faviconUrl;
+                            elements.faviconImg.src = faviconUrl;
+                            elements.faviconImg.alt = '网站图标';
+                            
+                            // 自动切换到favicon类型
+                            elements.iconTypeFavicon.checked = true;
+                            actions.toggleIconType();
+                            
+                            if (showNotification) {
+                                utils.showNotification('已获取网站图标');
+                            }
+                            return true;
+                        } else {
+                            if (showNotification) {
+                                alert('未找到该网站的图标，请尝试使用字体图标');
+                                // 自动切换到字体图标
+                                elements.iconTypeFont.checked = true;
+                                actions.toggleIconType();
+                            }
+                            return false;
+                        }
+                    },
+                    
+                    // 当URL输入变化时自动获取图标
+                    handleUrlChange: utils.debounce(async function() {
+                        const url = elements.siteUrl.value.trim();
+                        if (url && utils.validateUrl(url) === true) {
+                            await actions.fetchFavicon(false);
+                        }
+                    }, 800),
+                    
+                    // 打开网站编辑面板
+                    openSitePanel(isEdit = false, siteId = null) {
+                        // 重置表单和错误状态
+                        elements.editSiteId.value = '';
+                        elements.siteName.value = '';
+                        elements.siteUrl.value = '';
+                        elements.siteIcon.value = 'fas fa-globe';
+                        elements.siteColor.value = '#4e89ae';
+                        elements.siteFavicon.value = '';
+                        elements.faviconImg.src = '';
+                        elements.iconTypeFavicon.checked = true;
+                        
+                        // 清除错误状态
+                        elements.siteName.classList.remove('error');
+                        elements.siteNameError.style.display = 'none';
+                        elements.siteUrl.classList.remove('error');
+                        elements.siteUrlError.style.display = 'none';
+                        
+                        // 关闭其他面板
+                        elements.settingsPanel.classList.remove('active');
+                        actions.toggleIconType();
+                        
+                        if (isEdit && siteId) {
+                            // 编辑模式
+                            const site = appState.sites.find(s => s.id === siteId);
+                            if (site) {
+                                elements.sitePanelTitle.textContent = '编辑网站';
+                                elements.editSiteId.value = site.id;
+                                elements.siteName.value = site.name;
+                                elements.siteUrl.value = site.url;
+                                
+                                // 设置图标类型
+                                if (site.iconType === 'favicon') {
+                                    elements.iconTypeFavicon.checked = true;
+                                    elements.siteFavicon.value = site.favicon || '';
+                                    elements.faviconImg.src = site.favicon || '';
+                                } else {
+                                    elements.iconTypeFont.checked = true;
+                                    elements.siteIcon.value = site.icon || 'fas fa-globe';
+                                    elements.siteColor.value = site.color || '#4e89ae';
+                                }
+                                
+                                actions.toggleIconType();
+                                actions.updateIconPreview();
+                            }
+                        } else {
+                            // 添加模式
+                            elements.sitePanelTitle.textContent = '添加网站';
+                            actions.updateIconPreview();
+                        }
+                        
+                        // 显示面板
+                        elements.sitePanel.classList.add('active');
+                        // 聚焦第一个输入框
+                        elements.siteName.focus();
+                    },
+                    
+                    // 关闭网站编辑面板
+                    closeSitePanel() {
+                        elements.sitePanel.classList.remove('active');
+                    },
+                    
+                    // 验证网站表单
+                    validateSiteForm() {
+                        let isValid = true;
+                        
+                        // 验证网站名称
+                        if (!elements.siteName.value.trim()) {
+                            elements.siteName.classList.add('error');
+                            elements.siteNameError.style.display = 'block';
+                            isValid = false;
+                        } else {
+                            elements.siteName.classList.remove('error');
+                            elements.siteNameError.style.display = 'none';
+                        }
+                        
+                        // 验证URL
+                        const urlValidation = utils.validateUrl(elements.siteUrl.value.trim());
+                        if (urlValidation !== true) {
+                            elements.siteUrl.classList.add('error');
+                            elements.siteUrlError.textContent = urlValidation;
+                            elements.siteUrlError.style.display = 'block';
+                            isValid = false;
+                        } else {
+                            elements.siteUrl.classList.remove('error');
+                            elements.siteUrlError.style.display = 'none';
+                        }
+                        
+                        return isValid;
+                    },
+                    
+                    // 保存网站
+                    async saveSite() {
+                        if (!actions.validateSiteForm()) {
+                            return;
+                        }
+                        
+                        const id = elements.editSiteId.value || utils.generateId();
+                        const name = elements.siteName.value.trim();
+                        const url = elements.siteUrl.value.trim();
+                        const iconType = elements.iconTypeFont.checked ? 'font' : 'favicon';
+                        
+                        // 对于新网站且使用favicon但未获取到的情况，自动尝试获取
+                        const isNewSite = !elements.editSiteId.value;
+                        if (isNewSite && iconType === 'favicon' && !elements.siteFavicon.value) {
+                            // 尝试获取图标
+                            const success = await actions.fetchFavicon();
+                            if (!success) return;
+                            actions.completeSaveSite(id, name, url, iconType);
+                            return;
+                        }
+                        
+                        actions.completeSaveSite(id, name, url, iconType);
+                    },
+                    
+                    // 完成网站保存
+                    completeSaveSite(id, name, url, iconType) {
+                        // 准备网站数据
+                        const siteData = {
+                            id,
+                            name,
+                            url,
+                            iconType
+                        };
+                        
+                        // 根据图标类型添加相应数据
+                        if (iconType === 'font') {
+                            siteData.icon = elements.siteIcon.value.trim() || 'fas fa-globe';
+                            siteData.color = elements.siteColor.value;
+                            siteData.favicon = '';
+                        } else {
+                            siteData.favicon = elements.siteFavicon.value;
+                            siteData.icon = '';
+                            siteData.color = '';
+                            
+                            // 如果没有favicon，使用默认图标
+                            if (!siteData.favicon) {
+                                siteData.iconType = 'font';
+                                siteData.icon = 'fas fa-globe';
+                                siteData.color = '#4e89ae';
+                            }
+                        }
+                        
+                        // 检查是否是编辑模式
+                        const index = appState.sites.findIndex(s => s.id === id);
+                        
+                        if (index > -1) {
+                            // 更新现有网站
+                            appState.sites[index] = siteData;
+                            utils.showNotification('网站已更新');
+                        } else {
+                            // 添加新网站
+                            appState.sites.push(siteData);
+                            utils.showNotification('网站已添加');
+                        }
+                        
+                        // 保存到本地存储
+                        if (!utils.saveSites(appState.sites)) {
+                            utils.showNotification('保存网站失败', 2000);
+                            return;
+                        }
+                        
+                        // 重新渲染
+                        actions.renderSites();
+                        
+                        // 关闭面板
+                        actions.closeSitePanel();
+                    },
+                    
+                    // 删除网站
+                    deleteSite(id) {
+                        if (confirm('确定要删除这个网站吗？')) {
+                            appState.sites = appState.sites.filter(site => site.id !== id);
+                            if (!utils.saveSites(appState.sites)) {
+                                utils.showNotification('删除网站失败', 2000);
+                                return;
+                            }
+                            actions.renderSites();
+                            utils.showNotification('网站已删除');
+                        }
+                    }
+                };
+
+                // 事件监听
+                function setupEventListeners() {
+                    // 搜索相关
+                    elements.searchBtn.addEventListener('click', actions.performSearch);
+                    elements.searchInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') actions.performSearch();
+                    });
+
+                    // 搜索引擎切换 (事件委托)
+                    elements.engineSelector.addEventListener('click', (e) => {
+                        const engineBtn = e.target.closest('.engine-btn');
+                        if (engineBtn) {
+                            actions.switchSearchEngine(engineBtn.dataset.engine);
+                        }
+                    });
+
+                    // 设置面板
+                    elements.settingsBtn.addEventListener('click', actions.toggleSettingsPanel);
+                    
+                    // 滑块值显示更新
+                    elements.bgBlurInput.addEventListener('input', () => {
+                        elements.blurValue.textContent = `${elements.bgBlurInput.value}px`;
+                    });
+                    
+                    elements.bgBrightnessInput.addEventListener('input', () => {
+                        elements.brightnessValue.textContent = `${elements.bgBrightnessInput.value}%`;
+                    });
+                    
+                    // 保存设置
+                    elements.saveSettingsBtn.addEventListener('click', actions.saveSettings);
+                    
+                    // 网站相关
+                    elements.addSiteBtn.addEventListener('click', () => {
+                        actions.openSitePanel(false);
+                    });
+                    
+                    elements.saveSiteBtn.addEventListener('click', actions.saveSite);
+                    elements.cancelSiteBtn.addEventListener('click', actions.closeSitePanel);
+                    elements.refetchFaviconBtn.addEventListener('click', () => actions.fetchFavicon());
+                    
+                    // URL输入变化时自动获取图标
+                    elements.siteUrl.addEventListener('input', actions.handleUrlChange);
+                    
+                    // 图标类型切换
+                    elements.iconTypeFont.addEventListener('change', actions.toggleIconType);
+                    elements.iconTypeFavicon.addEventListener('change', actions.toggleIconType);
+                    
+                    // 图标预览更新
+                    elements.siteIcon.addEventListener('input', actions.updateIconPreview);
+                    elements.siteColor.addEventListener('input', actions.updateIconPreview);
+                    elements.siteFavicon.addEventListener('input', actions.updateIconPreview);
+                    
+                    // 网站编辑和删除 (事件委托)
+                    elements.sitesGrid.addEventListener('click', (e) => {
+                        const editBtn = e.target.closest('.site-edit');
+                        const deleteBtn = e.target.closest('.site-delete');
+                        
+                        if (editBtn) {
+                            actions.openSitePanel(true, editBtn.dataset.id);
+                            e.stopPropagation();
+                        } else if (deleteBtn) {
+                            actions.deleteSite(deleteBtn.dataset.id);
+                            e.stopPropagation();
+                        }
+                    });
+                    
+                    // 点击外部关闭面板
+                    document.addEventListener('click', (e) => {
+                        // 检查是否点击在面板外部
+                        const isClickInsideSettings = elements.settingsPanel.contains(e.target) || 
+                                                    elements.settingsBtn.contains(e.target);
+                        
+                        if (!isClickInsideSettings && elements.settingsPanel.classList.contains('active')) {
+                            elements.settingsPanel.classList.remove('active');
+                        }
+                        
+                        const isClickInsideSitePanel = elements.sitePanel.contains(e.target) ||
+                                                     elements.addSiteBtn.contains(e.target);
+                        
+                        if (!isClickInsideSitePanel && elements.sitePanel.classList.contains('active')) {
+                            elements.sitePanel.classList.remove('active');
+                        }
+                    });
+
+                    // 阻止面板内部点击冒泡
+                    [elements.settingsPanel, elements.sitePanel].forEach(panel => {
+                        panel.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                        });
+                    });
+                }
+
+                // 初始化应用
+                function init() {
+                    // 加载保存的设置和网站
+                    appState.settings = utils.loadSettings();
+                    appState.sites = utils.loadSites();
+                    
+                    // 设置初始状态
+                    actions.updateDateTime();
+                    setInterval(actions.updateDateTime, 1000);
+                    actions.applyBackgroundSettings();
+                    actions.switchSearchEngine(appState.settings.searchEngine);
+                    actions.renderSites();
+                    
+                    // 设置事件监听
+                    setupEventListeners();
+                    
+                    // 聚焦搜索框
+                    elements.searchInput.focus();
+                }
+
+                // 启动应用
+                init();
+            });
+        })();
+    </script>
+</body>
+</html>
